@@ -1,0 +1,1847 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hospoda U Františka – Minecore.cz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"></script>
+  <style>
+    :root {
+      --bg-main: #050505;
+      --bg-surface: #111111;
+      --bg-surface-hover: #181818;
+      --bg-input: #0a0a0a;
+      --border-subtle: #222222;
+      --border-hover: #383838;
+      --accent-red: #8B0000;
+      --accent-red-hover: #a80000;
+      --accent-purple: #581CE5;
+      --accent-purple-hover: #692ff5;
+      --text-primary: #FFFFFF;
+      --text-secondary: #B3B3B3;
+      --text-muted: #737373;
+      --gold: #F59E0B;
+      --green-online: #22c55e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-primary);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    .ambient-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .glow-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(110px);
+      opacity: 0.22;
+      animation: orbFloat 14s ease-in-out infinite alternate;
+    }
+
+    .glow-orb.red {
+      width: 420px;
+      height: 420px;
+      background: var(--accent-red);
+      top: -80px;
+      left: 50%;
+      transform: translateX(-65%);
+    }
+
+    .glow-orb.purple {
+      width: 340px;
+      height: 340px;
+      background: var(--accent-purple);
+      top: 260px;
+      left: 50%;
+      transform: translateX(-20%);
+      animation-delay: -5s;
+    }
+
+    @keyframes orbFloat {
+      0% { transform: translate(-55%, 0px) scale(1); opacity: 0.18; }
+      100% { transform: translate(-45%, 35px) scale(1.12); opacity: 0.28; }
+    }
+
+    .particles {
+      position: absolute;
+      inset: 0;
+    }
+
+    .particle {
+      position: absolute;
+      bottom: -10px;
+      width: 3px;
+      height: 3px;
+      background: rgba(255, 180, 120, 0.45);
+      border-radius: 50%;
+      animation: rise linear infinite;
+    }
+
+    @keyframes rise {
+      0% { transform: translateY(0) translateX(0); opacity: 0; }
+      15% { opacity: 0.6; }
+      85% { opacity: 0.2; }
+      100% { transform: translateY(-100vh) translateX(25px); opacity: 0; }
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(5, 5, 5, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nav-container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      background: var(--accent-red);
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: 0.04em;
+      padding: 6px 12px;
+      border-radius: 3px;
+      text-decoration: none;
+      transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .brand-badge:hover {
+      background: var(--accent-red-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 18px rgba(139, 0, 0, 0.45);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .icon-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-primary);
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-surface);
+      border-color: var(--border-subtle);
+      transform: translateY(-1px);
+    }
+
+    .search-bar-wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 20px;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+    }
+
+    .search-bar-wrap.open {
+      max-height: 80px;
+      padding-bottom: 14px;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 11px 16px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent-purple);
+    }
+
+    .mobile-drawer {
+      display: none;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 14px 20px;
+    }
+
+    .mobile-drawer.open {
+      display: block;
+      animation: fadeDown 0.22s ease;
+    }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .mobile-drawer nav {
+      max-width: 1080px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .mobile-drawer a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: color 0.2s;
+    }
+
+    .mobile-drawer a:hover {
+      color: var(--text-primary);
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 20px 80px;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 64px 12px 54px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green-online);
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+      animation: pulseGreen 2s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+      70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+
+    .hero h1 {
+      font-size: clamp(2.2rem, 5.5vw, 3.6rem);
+      font-weight: 800;
+      line-height: 1.14;
+      letter-spacing: -0.025em;
+      max-width: 720px;
+      margin: 0 auto 20px;
+      animation: fadeUp 0.7s ease 0.08s both;
+    }
+
+    .hero p.subtitle {
+      color: var(--text-secondary);
+      font-size: clamp(1rem, 2.2vw, 1.15rem);
+      max-width: 600px;
+      margin: 0 auto 34px;
+      animation: fadeUp 0.7s ease 0.16s both;
+    }
+
+    .hero-buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      animation: fadeUp 0.7s ease 0.24s both;
+    }
+
+    @media (min-width: 560px) {
+      .hero-buttons {
+        flex-direction: row;
+        justify-content: center;
+      }
+    }
+
+    .btn-pill {
+      position: relative;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-width: 215px;
+      padding: 15px 30px;
+      border-radius: 999px;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn-pill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
+      transform: skewX(-20deg);
+      transition: left 0.55s ease;
+    }
+
+    .btn-pill:hover::after {
+      left: 140%;
+    }
+
+    .btn-pill:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-pill:active {
+      transform: translateY(0);
+    }
+
+    .btn-red {
+      background: var(--accent-red);
+      box-shadow: 0 8px 26px rgba(139, 0, 0, 0.35);
+    }
+
+    .btn-red:hover {
+      background: var(--accent-red-hover);
+      box-shadow: 0 12px 32px rgba(168, 0, 0, 0.45);
+    }
+
+    .btn-purple {
+      background: var(--accent-purple);
+      box-shadow: 0 8px 26px rgba(88, 28, 229, 0.35);
+    }
+
+    .btn-purple:hover {
+      background: var(--accent-purple-hover);
+      box-shadow: 0 12px 32px rgba(105, 47, 245, 0.45);
+    }
+
+    .quick-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 14px;
+      margin-top: 48px;
+      animation: fadeUp 0.7s ease 0.32s both;
+    }
+
+    .stat-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 18px 20px;
+      text-align: center;
+      transition: border-color 0.25s ease, transform 0.25s ease;
+    }
+
+    .stat-box:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-3px);
+    }
+
+    .stat-value {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    section {
+      margin-top: 68px;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .section-header h2 {
+      font-size: clamp(1.75rem, 4vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+
+    .section-header p {
+      color: var(--text-secondary);
+      max-width: 560px;
+      margin: 0 auto;
+      font-size: 0.98rem;
+    }
+
+    .access-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 24px;
+      transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(139, 0, 0, 0.65);
+      background: var(--bg-surface-hover);
+    }
+
+    .card-tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(139, 0, 0, 0.2);
+      color: #ff6b6b;
+      margin-bottom: 12px;
+    }
+
+    .card-tag.purple {
+      background: rgba(88, 28, 229, 0.2);
+      color: #a78bfa;
+    }
+
+    .card h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      color: var(--text-secondary);
+      font-size: 0.93rem;
+    }
+
+    .cmd-box {
+      margin-top: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.92rem;
+      color: #fff;
+      cursor: pointer;
+      transition: border-color 0.2s ease;
+    }
+
+    .cmd-box:hover {
+      border-color: var(--accent-red);
+    }
+
+    .copy-hint {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .filter-pills {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .filter-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .filter-btn:hover {
+      color: #fff;
+      border-color: var(--border-hover);
+    }
+
+    .filter-btn.active {
+      background: var(--accent-red);
+      border-color: var(--accent-red);
+      color: #fff;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 16px;
+    }
+
+    .menu-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+      transition: transform 0.22s ease, border-color 0.22s ease;
+    }
+
+    .menu-item:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-hover);
+    }
+
+    .menu-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .menu-title {
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+
+    .menu-price {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 0.92rem;
+      background: rgba(245, 158, 11, 0.14);
+      color: var(--gold);
+      padding: 4px 10px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    .menu-desc {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    .reviews-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    @media (min-width: 820px) {
+      .reviews-layout {
+        grid-template-columns: 360px 1fr;
+        align-items: start;
+      }
+    }
+
+    .review-form-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    @media (min-width: 820px) {
+      .review-form-card {
+        position: sticky;
+        top: 84px;
+      }
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .nick-preview-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar-preview {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .form-control {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 11px 14px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.94rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .form-control:focus {
+      border-color: var(--accent-purple);
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 92px;
+    }
+
+    .star-picker {
+      display: flex;
+      gap: 6px;
+    }
+
+    .star-btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 1.25rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: transform 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .star-btn.active {
+      color: var(--gold);
+      border-color: rgba(245, 158, 11, 0.5);
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .star-btn:hover {
+      transform: scale(1.08);
+    }
+
+    .reviews-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-anchor: none;
+    }
+
+    .review-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 20px;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .review-card.just-added {
+      animation: fadeUp 0.32s ease both;
+    }
+
+    .review-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    .review-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .review-author {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .review-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      background: #1a1a1a;
+      flex-shrink: 0;
+    }
+
+    .review-name {
+      font-weight: 700;
+      font-size: 0.98rem;
+    }
+
+    .review-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .review-stars {
+      color: var(--gold);
+      letter-spacing: 1px;
+      font-size: 0.95rem;
+      white-space: nowrap;
+    }
+
+    .review-text {
+      color: var(--text-secondary);
+      font-size: 0.94rem;
+      overflow-wrap: anywhere;
+    }
+
+    .review-footer {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .ordered-badge {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 3px 9px;
+      border-radius: 6px;
+      color: var(--text-secondary);
+    }
+
+    .delete-review-btn {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+
+    .delete-review-btn:hover {
+      text-decoration: underline;
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .toast {
+      position: fixed;
+      top: 74px;
+      left: 50%;
+      transform: translate(-50%, -24px);
+      background: #161616;
+      border: 1px solid var(--accent-red);
+      color: #fff;
+      padding: 11px 18px;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.65);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.25s ease;
+      z-index: 100;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      text-align: center;
+      padding: 32px 20px;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    body:not(.authenticated) > .ambient-bg,
+    body:not(.authenticated) > header,
+    body:not(.authenticated) > main,
+    body:not(.authenticated) > footer,
+    body:not(.authenticated) > #toast { visibility: hidden; }
+    #authScreen {
+      position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center;
+      justify-content: center; padding: 22px; overflow-y: auto;
+      background: radial-gradient(circle at 20% 10%, rgba(139,0,0,.22), transparent 38%),
+                  radial-gradient(circle at 85% 80%, rgba(88,28,229,.20), transparent 38%), #050505;
+    }
+    body.authenticated #authScreen { display: none; }
+    .auth-card { width: min(100%, 440px); background: rgba(17,17,17,.96); border: 1px solid #292929;
+      border-radius: 20px; padding: 28px; box-shadow: 0 24px 90px rgba(0,0,0,.55); }
+    .auth-brand { text-align:center; margin-bottom: 22px; }
+    .auth-brand .brand-badge { margin-bottom: 14px; }
+    .auth-brand h1 { font-size: 1.65rem; line-height:1.2; margin-bottom:8px; }
+    .auth-brand p { color: var(--text-secondary); font-size:.9rem; }
+    .auth-tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px; }
+    .auth-tab { border:1px solid var(--border-subtle); background:#090909; color:var(--text-secondary); padding:10px; border-radius:9px; font-weight:700; cursor:pointer; }
+    .auth-tab.active { background:var(--accent-red); border-color:var(--accent-red); color:#fff; }
+    .auth-form .form-group { margin-bottom:14px; }
+    .auth-form label { display:block; color:var(--text-secondary); font-size:.84rem; font-weight:600; margin-bottom:6px; }
+    .auth-form input { width:100%; background:#090909; color:#fff; border:1px solid #303030; border-radius:10px; padding:12px 13px; font:inherit; outline:none; }
+    .auth-form input:focus { border-color:var(--accent-purple); }
+    .auth-submit { width:100%; min-width:0; margin-top:14px; }
+    .auth-links { display:flex; justify-content:space-between; gap:12px; margin-top:16px; flex-wrap:wrap; }
+    .auth-link { border:0; background:none; color:#b69aff; cursor:pointer; font:inherit; font-size:.86rem; text-decoration:underline; }
+    #authMessage { min-height:22px; margin-top:12px; color:#fca5a5; font-size:.86rem; text-align:center; }
+    #turnstileBox { display:flex; justify-content:center; margin:14px 0 2px; min-height:65px; overflow:hidden; }
+    #adminPanel { display:none; }
+    #adminPanel.open { display:block; }
+    .admin-review-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--border-subtle); }
+    .admin-review-row:last-child { border-bottom:0; }
+    .admin-review-info { min-width:0; overflow-wrap:anywhere; }
+    .admin-review-info strong { display:block; }
+    .admin-review-info small { color:var(--text-muted); }
+    .admin-delete { flex-shrink:0; border:1px solid #7f1d1d; background:#2a0b0b; color:#fca5a5; border-radius:8px; padding:8px 11px; cursor:pointer; }
+    @media(max-width:480px) { .auth-card { padding:22px 18px; } .admin-review-row { align-items:flex-start; } }
+  </style>
+</head>
+<body>
+
+  <div id="authScreen">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div><span class="brand-badge">MINECORE.CZ</span></div>
+        <h1>Hospoda U Františka</h1>
+        <p>Přihlas se pomocí svého Minecraft účtu.</p>
+      </div>
+      <div class="auth-tabs" id="authTabs">
+        <button type="button" class="auth-tab active" data-auth-mode="login">Přihlášení</button>
+        <button type="button" class="auth-tab" data-auth-mode="register">Registrace</button>
+      </div>
+      <form id="loginForm" class="auth-form">
+        <div class="form-group"><label for="loginNick">Minecraft nick</label><input id="loginNick" autocomplete="username" minlength="3" maxlength="16" required placeholder="Např. BagetaMC"></div>
+        <div class="form-group"><label for="loginEmail">E-mail</label><input id="loginEmail" type="email" autocomplete="email" required placeholder="tvuj@email.cz"></div>
+        <div class="form-group"><label for="loginPassword">Heslo</label><input id="loginPassword" type="password" autocomplete="current-password" required minlength="8" placeholder="Tvoje heslo"></div>
+        <button class="btn-pill btn-red auth-submit" type="submit">Přihlásit se</button>
+      </form>
+      <form id="registerForm" class="auth-form" hidden>
+        <div class="form-group"><label for="registerNick">Minecraft nick</label><input id="registerNick" autocomplete="username" minlength="3" maxlength="16" pattern="[A-Za-z0-9_]{3,16}" required placeholder="Svůj in-game nick"></div>
+        <div class="form-group"><label for="registerEmail">E-mail</label><input id="registerEmail" type="email" autocomplete="email" required placeholder="bageta.private@gmail.com"></div>
+        <div class="form-group"><label for="registerPassword">Heslo (min. 8 znaků)</label><input id="registerPassword" type="password" autocomplete="new-password" minlength="8" required></div>
+        <div class="form-group"><label for="registerPassword2">Potvrzení hesla</label><input id="registerPassword2" type="password" autocomplete="new-password" minlength="8" required></div>
+        <button class="btn-pill btn-red auth-submit" type="submit">Vytvořit účet</button>
+      </form>
+      <form id="recoveryForm" class="auth-form" hidden>
+        <div class="form-group"><label for="recoveryEmail">E-mail účtu</label><input id="recoveryEmail" type="email" autocomplete="email" required placeholder="tvuj@email.cz"></div>
+        <button class="btn-pill btn-red auth-submit" type="submit">Poslat odkaz pro obnovu</button>
+      </form>
+      <form id="newPasswordForm" class="auth-form" hidden>
+        <div class="form-group"><label for="newPassword">Nové heslo</label><input id="newPassword" type="password" minlength="8" required autocomplete="new-password"></div>
+        <div class="form-group"><label for="newPassword2">Potvrzení nového hesla</label><input id="newPassword2" type="password" minlength="8" required autocomplete="new-password"></div>
+        <button class="btn-pill btn-red auth-submit" type="submit">Uložit nové heslo</button>
+      </form>
+      <div id="turnstileBox"></div>
+      <div class="auth-links">
+        <button type="button" class="auth-link" id="forgotPasswordBtn">Zapomenuté heslo?</button>
+        <button type="button" class="auth-link" id="backToLoginBtn" hidden>Zpět na přihlášení</button>
+      </div>
+      <div id="authMessage" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="glow-orb red"></div>
+    <div class="glow-orb purple"></div>
+    <div class="particles" id="particlesContainer"></div>
+  </div>
+
+  <header>
+    <div class="nav-container">
+      <a href="#" class="brand-badge">MINECORE.CZ</a>
+      <div class="nav-actions">
+        <button class="icon-btn" id="searchToggleBtn" title="Hledat v nabídce nebo recenzích" aria-label="Hledat">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+        <button class="icon-btn" id="adminToggleBtn" title="Admin panel" aria-label="Admin panel" hidden style="width:auto;padding:0 10px;font-size:.8rem;">ADMIN</button>
+        <button class="icon-btn" id="logoutBtn" title="Odhlásit se" aria-label="Odhlásit se" style="width:auto;padding:0 10px;font-size:.8rem;">Odhlásit</button>
+        <button class="icon-btn" id="menuToggleBtn" title="Menu" aria-label="Menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="search-bar-wrap" id="searchBarWrap">
+      <input type="text" id="globalSearchInput" class="search-input" placeholder="Hledat položku v nabídce nebo přezdívku v recenzích..." />
+    </div>
+
+    <div class="mobile-drawer" id="mobileDrawer">
+      <nav>
+        <a href="#jak-se-dostat">Jak se k nám dostat</a>
+        <a href="#nabidka">Nabídka ChestShopu</a>
+        <a href="#recenze">Kniha hostů (Recenze)</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero" style="margin-top: 0;">
+      <div class="status-pill">
+        <span class="pulse-dot"></span>
+        <span>Otevřeno 24/7 • Domácí výroba</span>
+      </div>
+
+      <h1>Hospoda U Františka</h1>
+      <p class="subtitle">
+        Hospoda na Survivalu serveru Minecore.cz s nabídkou domácích alkoholických nápojů. Celý sortiment je vlastní výroby a dostupný v ChestShopech.
+      </p>
+
+      <div class="hero-buttons">
+        <button type="button" class="btn-pill btn-red" onclick="copyText('/pwarp hospoda', 'Příkaz /pwarp hospoda byl zkopírován!')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span>/pwarp hospoda</span>
+        </button>
+
+        <a href="#recenze" class="btn-pill btn-purple">
+          <span>Napsat recenzi</span>
+        </a>
+      </div>
+
+      <div class="quick-stats">
+        <div class="stat-box">
+          <div class="stat-value" id="avgRatingStat">4.9 / 5 ★</div>
+          <div class="stat-label" id="totalReviewsStat">Hodnocení štamgastů</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">24/7</div>
+          <div class="stat-label">Domácí výroba</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">play.minecore.cz</div>
+          <div class="stat-label">Herní svět Survival</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="jak-se-dostat" class="reveal">
+      <div class="section-header">
+        <h2>Jak se k nám dostat</h2>
+        <p>Připoj se na server a teleportuj se přímo před vchod hospody.</p>
+      </div>
+
+      <div class="access-grid">
+        <div class="card">
+          <span class="card-tag">1. Krok</span>
+          <h3>Připoj se na Minecore.cz</h3>
+          <p>Otevři Minecraft na aktuální verzi, přidej si server do seznamu a přejdi na herní režim <strong>Survival</strong>.</p>
+          <div class="cmd-box" onclick="copyText('play.minecore.cz', 'IP adresa play.minecore.cz zkopírována!')">
+            <span>play.minecore.cz</span>
+            <span class="copy-hint">Kopírovat IP</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <span class="card-tag purple">2. Krok</span>
+          <h3>Použij hráčský warp</h3>
+          <p>Příkaz pro teleportaci do hospody. Uvnitř jsou označené truhly s nabídkou domácích nápojů.</p>
+          <div class="cmd-box" onclick="copyText('/pwarp hospoda', 'Příkaz /pwarp hospoda zkopírován!')">
+            <span>/pwarp hospoda</span>
+            <span class="copy-hint">Kopírovat příkaz</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <span class="card-tag">Samoobsluha 24/7</span>
+          <h3>ChestShopy</h3>
+          <p>Sortiment domácí výroby je uložený v označených truhlách a prodávaný přes <strong>ChestShopy</strong>.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="nabidka" class="reveal">
+      <div class="section-header">
+        <h2>Nabídka domácí výroby</h2>
+        <p>Alkoholické nápoje vlastní výroby dostupné v ChestShopech.</p>
+      </div>
+
+      <div class="filter-pills" id="menuFilters">
+        <button type="button" class="filter-btn active" data-cat="all">Celá nabídka</button>
+        <button type="button" class="filter-btn" data-cat="likery">Likéry</button>
+        <button type="button" class="filter-btn" data-cat="piva">Piva</button>
+        <button type="button" class="filter-btn" data-cat="medoviny">Medoviny</button>
+        <button type="button" class="filter-btn" data-cat="ostatni">Ostatní</button>
+      </div>
+
+      <div class="menu-grid" id="menuGrid"></div>
+    </section>
+
+    <section id="recenze" class="reveal">
+      <div class="section-header">
+        <h2>Kniha hostů</h2>
+        <p>Byl jsi u Františka? Zanech ostatním hráčům krátké hodnocení.</p>
+      </div>
+
+      <div class="reviews-layout">
+        <div class="review-form-card">
+          <h3 style="margin-bottom: 16px; font-size: 1.15rem;">Přidat recenzi</h3>
+          <form id="reviewForm">
+            <div class="form-group">
+              <label for="playerNick">Tvůj nick ve hře</label>
+              <div class="nick-preview-row">
+                <img id="nickAvatarPreview" class="avatar-preview" src="https://mc-heads.net/avatar/Steve/64" alt="Skin" />
+                <input type="text" id="playerNick" class="form-control" placeholder="Např. FrantisekCZ" required minlength="3" maxlength="16" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Hodnocení</label>
+              <div class="star-picker" id="starPicker">
+                <button type="button" class="star-btn active" data-val="1">★</button>
+                <button type="button" class="star-btn active" data-val="2">★</button>
+                <button type="button" class="star-btn active" data-val="3">★</button>
+                <button type="button" class="star-btn active" data-val="4">★</button>
+                <button type="button" class="star-btn active" data-val="5">★</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="orderedItem">Který nápoj hodnotíš?</label>
+              <select id="orderedItem" class="form-control"></select>
+            </div>
+
+            <div class="form-group">
+              <label for="reviewComment">Tvoje hodnocení</label>
+              <textarea id="reviewComment" class="form-control" placeholder="Napiš krátké hodnocení..." required maxlength="280"></textarea>
+            </div>
+
+            <button type="submit" class="btn-pill btn-red" style="width: 100%;">
+              Odeslat hodnocení
+            </button>
+          </form>
+        </div>
+
+        <div>
+          <div class="filter-pills" style="justify-content: flex-start; margin-bottom: 16px;" id="reviewFilters">
+            <button type="button" class="filter-btn active" data-stars="all">Všechny recenze</button>
+            <button type="button" class="filter-btn" data-stars="5">5 ★</button>
+            <button type="button" class="filter-btn" data-stars="4">4 ★</button>
+            <button type="button" class="filter-btn" data-stars="3">3 ★ a méně</button>
+          </div>
+          <div class="reviews-list" id="reviewsList"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="adminPanel" class="reveal">
+      <div class="section-header">
+        <h2>Admin panel</h2>
+        <p>Správa recenzí. Mazání je povoleno pouze účtu s administrátorskou rolí v Supabase.</p>
+      </div>
+      <div class="card" id="adminReviewsList">Načítání administrace…</div>
+    </section>
+  </main>
+
+  <footer>
+    Hospoda U Františka • Komunitní stavba na serveru Minecore.cz (<code>/pwarp hospoda</code>)
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+
+const SUPABASE_URL = 'https://lrtkrgwzxfcjvafljnrk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_rIYu_uvo9LyqDpeWA0cLPQ_qDG-EFa7';
+const TURNSTILE_SITE_KEY = '0x4AAAAAAGQU9YpVvjag84Wp';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+});
+let captchaToken = null;
+let turnstileWidgetId = null;
+let currentSession = null;
+let currentNickname = '';
+let isAdmin = false;
+let authMode = 'login';
+
+function authMessage(message, success = false) {
+  const el = document.getElementById('authMessage');
+  el.textContent = message || '';
+  el.style.color = success ? '#86efac' : '#fca5a5';
+}
+
+function setAuthMode(mode) {
+  authMode = mode;
+  document.getElementById('loginForm').hidden = mode !== 'login';
+  document.getElementById('registerForm').hidden = mode !== 'register';
+  document.getElementById('recoveryForm').hidden = mode !== 'recovery';
+  document.getElementById('newPasswordForm').hidden = mode !== 'newPassword';
+  document.getElementById('authTabs').hidden = mode === 'recovery' || mode === 'newPassword';
+  document.getElementById('forgotPasswordBtn').hidden = mode !== 'login';
+  document.getElementById('backToLoginBtn').hidden = mode === 'login';
+  document.querySelectorAll('[data-auth-mode]').forEach(btn => btn.classList.toggle('active', btn.dataset.authMode === mode));
+  authMessage('');
+  if (turnstileWidgetId !== null && window.turnstile) {
+    captchaToken = null;
+    try { window.turnstile.reset(turnstileWidgetId); } catch (_) {}
+  }
+}
+
+function initTurnstile() {
+  if (!window.turnstile || turnstileWidgetId !== null) return;
+  turnstileWidgetId = window.turnstile.render('#turnstileBox', {
+    sitekey: TURNSTILE_SITE_KEY,
+    theme: 'dark',
+    callback: token => { captchaToken = token; },
+    'expired-callback': () => { captchaToken = null; },
+    'error-callback': () => { captchaToken = null; authMessage('CAPTCHA se nepodařilo načíst. Obnov stránku.'); }
+  });
+}
+
+function consumeCaptcha() {
+  if (!captchaToken) throw new Error('Nejdřív dokonči ověření CAPTCHA.');
+  const token = captchaToken;
+  captchaToken = null;
+  return token;
+}
+
+function resetCaptcha() {
+  captchaToken = null;
+  if (turnstileWidgetId !== null && window.turnstile) {
+    try { window.turnstile.reset(turnstileWidgetId); } catch (_) {}
+  }
+}
+
+function friendlyAuthError(error) {
+  const msg = String(error?.message || '').toLowerCase();
+  if (msg.includes('captcha')) return 'Ověření CAPTCHA vypršelo nebo nebylo dokončeno. Zkus to znovu.';
+  if (msg.includes('invalid login credentials')) return 'Nesprávný e-mail nebo heslo.';
+  if (msg.includes('email not confirmed')) return 'Nejdřív potvrď e-mail přes odkaz v doručené poště.';
+  if (msg.includes('already registered') || msg.includes('user already registered')) return 'Účet s tímto e-mailem už existuje.';
+  if (msg.includes('password')) return 'Heslo musí mít alespoň 8 znaků.';
+  if (msg.includes('duplicate key') || msg.includes('profiles_nickname_ci_unique')) return 'Tento Minecraft nick už je registrovaný.';
+  if (msg.includes('invalid minecraft nickname') || msg.includes('invalid') && msg.includes('nickname')) return 'Nick musí mít 3–16 znaků: písmena, čísla nebo _.';
+  return error?.message || 'Požadavek se nepodařilo dokončit. Zkus to znovu.';
+}
+
+async function fetchOwnProfile(userId) {
+  const { data, error } = await supabase.from('profiles').select('nickname').eq('id', userId).single();
+  if (error || !data?.nickname) throw new Error('Profil účtu nebyl nalezen. Kontaktuj správce webu.');
+  return data;
+}
+
+async function enterWebsite(session, expectedNickname = '') {
+  if (!session?.user) return;
+  try {
+    const profile = await fetchOwnProfile(session.user.id);
+    if (expectedNickname && profile.nickname.toLowerCase() !== expectedNickname.trim().toLowerCase()) {
+      await supabase.auth.signOut();
+      throw new Error('Minecraft nick neodpovídá tomuto e-mailovému účtu.');
+    }
+    currentSession = session;
+    currentNickname = profile.nickname;
+    isAdmin = session.user.app_metadata?.role === 'admin';
+    document.body.classList.add('authenticated');
+    document.getElementById('adminToggleBtn').hidden = !isAdmin;
+    const nickInput = document.getElementById('playerNick');
+    nickInput.value = currentNickname;
+    nickInput.readOnly = true;
+    document.getElementById('nickAvatarPreview').src = `https://mc-heads.net/avatar/${encodeURIComponent(currentNickname)}/64`;
+    await loadReviews();
+    if (isAdmin) renderAdminReviews();
+  } catch (error) {
+    document.body.classList.remove('authenticated');
+    currentSession = null;
+    currentNickname = '';
+    isAdmin = false;
+    authMessage(friendlyAuthError(error));
+  }
+}
+
+async function handleLogin(event) {
+  event.preventDefault();
+  const button = event.currentTarget.querySelector('button[type="submit"]');
+  button.disabled = true; button.textContent = 'Přihlašuji…';
+  try {
+    const nickname = document.getElementById('loginNick').value.trim();
+    if (!/^[A-Za-z0-9_]{3,16}$/.test(nickname)) throw new Error('Nick musí mít 3–16 znaků: písmena, čísla nebo _.');
+    const token = consumeCaptcha();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: document.getElementById('loginEmail').value.trim(),
+      password: document.getElementById('loginPassword').value,
+      options: { captchaToken: token }
+    });
+    if (error) throw error;
+    await enterWebsite(data.session, nickname);
+  } catch (error) { authMessage(friendlyAuthError(error)); }
+  finally { resetCaptcha(); button.disabled = false; button.textContent = 'Přihlásit se'; }
+}
+
+async function handleRegister(event) {
+  event.preventDefault();
+  const button = event.currentTarget.querySelector('button[type="submit"]');
+  const nickname = document.getElementById('registerNick').value.trim();
+  const password = document.getElementById('registerPassword').value;
+  button.disabled = true; button.textContent = 'Vytvářím účet…';
+  try {
+    if (!/^[A-Za-z0-9_]{3,16}$/.test(nickname)) throw new Error('Nick musí mít 3–16 znaků: písmena, čísla nebo _.');
+    if (password.length < 8) throw new Error('Heslo musí mít alespoň 8 znaků.');
+    if (password !== document.getElementById('registerPassword2').value) throw new Error('Zadaná hesla se neshodují.');
+    const token = consumeCaptcha();
+    const { data, error } = await supabase.auth.signUp({
+      email: document.getElementById('registerEmail').value.trim(),
+      password,
+      options: {
+        data: { nickname },
+        emailRedirectTo: window.location.origin + window.location.pathname,
+        captchaToken: token
+      }
+    });
+    if (error) throw error;
+    if (data.session) await enterWebsite(data.session, nickname);
+    else { authMessage('Účet byl vytvořen. Potvrď e-mail od Supabase a potom se přihlas.', true); setAuthMode('login'); }
+  } catch (error) { authMessage(friendlyAuthError(error)); }
+  finally { resetCaptcha(); button.disabled = false; button.textContent = 'Vytvořit účet'; }
+}
+
+async function handleRecovery(event) {
+  event.preventDefault();
+  const button = event.currentTarget.querySelector('button[type="submit"]');
+  button.disabled = true; button.textContent = 'Odesílám…';
+  try {
+    const token = consumeCaptcha();
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      document.getElementById('recoveryEmail').value.trim(),
+      { redirectTo: window.location.origin + window.location.pathname, captchaToken: token }
+    );
+    if (error) throw error;
+    authMessage('Pokud účet existuje, dorazí e-mail s odkazem pro obnovu hesla.', true);
+  } catch (error) { authMessage(friendlyAuthError(error)); }
+  finally { resetCaptcha(); button.disabled = false; button.textContent = 'Poslat odkaz pro obnovu'; }
+}
+
+async function handleNewPassword(event) {
+  event.preventDefault();
+  const password = document.getElementById('newPassword').value;
+  if (password.length < 8) return authMessage('Heslo musí mít alespoň 8 znaků.');
+  if (password !== document.getElementById('newPassword2').value) return authMessage('Zadaná hesla se neshodují.');
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return authMessage(friendlyAuthError(error));
+  authMessage('Heslo bylo změněno. Nyní se můžeš přihlásit.', true);
+  await supabase.auth.signOut();
+  setAuthMode('login');
+}
+
+async function initAuth() {
+  document.getElementById('authTabs').addEventListener('click', e => {
+    const btn = e.target.closest('[data-auth-mode]');
+    if (btn) setAuthMode(btn.dataset.authMode);
+  });
+  document.getElementById('loginForm').addEventListener('submit', handleLogin);
+  document.getElementById('registerForm').addEventListener('submit', handleRegister);
+  document.getElementById('recoveryForm').addEventListener('submit', handleRecovery);
+  document.getElementById('newPasswordForm').addEventListener('submit', handleNewPassword);
+  document.getElementById('forgotPasswordBtn').addEventListener('click', () => setAuthMode('recovery'));
+  document.getElementById('backToLoginBtn').addEventListener('click', () => setAuthMode('login'));
+  document.getElementById('logoutBtn').addEventListener('click', async () => { await supabase.auth.signOut(); location.reload(); });
+  document.getElementById('adminToggleBtn').addEventListener('click', () => {
+    const panel = document.getElementById('adminPanel');
+    panel.classList.toggle('open');
+    if (panel.classList.contains('open')) { renderAdminReviews(); panel.scrollIntoView({ behavior: 'smooth' }); }
+  });
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') setAuthMode('newPassword');
+    if (event === 'SIGNED_OUT') { document.body.classList.remove('authenticated'); currentSession = null; currentNickname = ''; isAdmin = false; }
+    if (event === 'TOKEN_REFRESHED' && session) currentSession = session;
+  });
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) await enterWebsite(session);
+  if (location.hash.includes('type=recovery')) setAuthMode('newPassword');
+  const waitForTurnstile = () => {
+    if (window.turnstile) initTurnstile();
+    else setTimeout(waitForTurnstile, 250);
+  };
+  waitForTurnstile();
+}
+
+(function initParticles() {
+  const container = document.getElementById('particlesContainer');
+  for (let i = 0; i < 22; i++) {
+    const p = document.createElement('span');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (9 + Math.random() * 12) + 's';
+    p.style.animationDelay = (-Math.random() * 15) + 's';
+    const size = (2 + Math.random() * 2.5).toFixed(1) + 'px';
+    p.style.width = size;
+    p.style.height = size;
+    container.appendChild(p);
+  }
+})();
+
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) entry.target.classList.add('visible');
+  });
+}, { threshold: 0.08 });
+
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+const menuItems = [
+  { id: 1, name: 'Vaječný likér', cat: 'likery', price: '1000 $', desc: 'Domácí vaječný likér.' },
+  { id: 2, name: 'Domácí likér', cat: 'likery', price: '1000 $', desc: 'Likér vlastní výroby.' },
+  { id: 3, name: 'Fine Beer', cat: 'piva', price: '1000 $', desc: 'Domácí pivo.' },
+  { id: 4, name: 'Pivo (skoro jako Plzeň)', cat: 'piva', price: '800 $', desc: 'Domácí pivo.' },
+  { id: 5, name: 'Medovina', cat: 'medoviny', price: '1000 $', desc: 'Domácí medovina.' },
+  { id: 6, name: 'Mead', cat: 'medoviny', price: '1000 $', desc: 'Medovina vlastní výroby.' },
+  { id: 7, name: 'Latte', cat: 'ostatni', price: '800 $', desc: 'Domácí latte.' }
+];
+
+const orderedItemSelect = document.getElementById('orderedItem');
+orderedItemSelect.innerHTML = menuItems.map(item =>
+  `<option value="${item.name}">${item.name}</option>`
+).join('');
+
+let activeMenuCat = 'all';
+let searchQuery = '';
+
+function renderMenu() {
+  const grid = document.getElementById('menuGrid');
+  const filtered = menuItems.filter(item => {
+    const matchCat = activeMenuCat === 'all' || item.cat === activeMenuCat;
+    const matchSearch = !searchQuery ||
+      item.name.toLowerCase().includes(searchQuery) ||
+      item.desc.toLowerCase().includes(searchQuery);
+    return matchCat && matchSearch;
+  });
+
+  if (!filtered.length) {
+    grid.innerHTML = `<p style="color:var(--text-muted);grid-column:1/-1;text-align:center;">Žádná položka neodpovídá hledání.</p>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(item => `
+    <div class="menu-item">
+      <div>
+        <div class="menu-top">
+          <div class="menu-title">${escapeHtml(item.name)}</div>
+          <div class="menu-price">${escapeHtml(item.price)}</div>
+        </div>
+        <p class="menu-desc" style="margin-top:8px;">${escapeHtml(item.desc)}</p>
+      </div>
+      <div style="font-size:.78rem;color:var(--text-muted);">Domácí výroba</div>
+    </div>
+  `).join('');
+}
+
+document.getElementById('menuFilters').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn) return;
+  document.querySelectorAll('#menuFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeMenuCat = btn.dataset.cat;
+  renderMenu();
+});
+
+const REVIEWS_ENDPOINT = `${SUPABASE_URL}/rest/v1/reviews`;
+
+const ALLOWED_ITEMS = menuItems.map(item => item.name);
+
+let reviews = [];
+let activeStarFilter = 'all';
+let lastAddedId = null;
+let selectedStars = 5;
+
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, m => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[m]));
+}
+
+function formatReviewDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('cs-CZ', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(date);
+}
+
+async function loadReviews() {
+  const list = document.getElementById('reviewsList');
+  list.innerHTML = `<div class="card" style="text-align:center;color:var(--text-muted);">Načítání recenzí…</div>`;
+
+  try {
+    const response = await fetch(
+      `${REVIEWS_ENDPOINT}?select=id,nickname,rating,item,comment,created_at&order=created_at.desc&limit=100`,
+      {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${currentSession?.access_token || SUPABASE_KEY}`
+        }
+      }
+    );
+
+    if (!response.ok) {
+      const error = await readSupabaseError(response);
+      throw new Error(error.message || 'Nepodařilo se načíst recenze.');
+    }
+
+    const rows = await response.json();
+
+    reviews = rows.map(row => ({
+      id: row.id,
+      nick: row.nickname,
+      stars: Number(row.rating),
+      item: row.item,
+      comment: row.comment,
+      date: formatReviewDate(row.created_at)
+    }));
+
+    renderReviews();
+    if (isAdmin) renderAdminReviews();
+  } catch (error) {
+    console.error('Načítání recenzí:', error);
+    list.innerHTML = `<div class="card" style="text-align:center;color:var(--text-muted);">Recenze se nepodařilo načíst. Zkus obnovit stránku.</div>`;
+    updateStats();
+  }
+}
+
+async function readSupabaseError(response) {
+  let data = {};
+
+  try {
+    data = await response.json();
+  } catch {
+    data = {};
+  }
+
+  return {
+    status: response.status,
+    message: String(data.message || data.error || ''),
+    details: String(data.details || ''),
+    hint: String(data.hint || ''),
+    code: String(data.code || '')
+  };
+}
+
+function translateReviewError(error) {
+  const text = `${error.message} ${error.details} ${error.hint}`.toLowerCase();
+
+  if (text.includes('wait before') || text.includes('cooldown')) {
+    return 'Z tohoto nicku lze přidat recenzi pouze jednou za 5 minut.';
+  }
+
+  if (text.includes('invalid minecraft nickname')) {
+    return 'Neplatný Minecraft nick. Použij 3–16 znaků: písmena, čísla nebo _.';
+  }
+
+  if (text.includes('rating must')) {
+    return 'Hodnocení musí být mezi 1 a 5 hvězdičkami.';
+  }
+
+  if (text.includes('unknown menu item')) {
+    return 'Vybraná položka není v aktuální nabídce.';
+  }
+
+  if (text.includes('review must contain')) {
+    return 'Komentář musí mít alespoň 5 a maximálně 280 znaků.';
+  }
+
+  if (text.includes('links are not allowed')) {
+    return 'Recenze nesmí obsahovat odkazy.';
+  }
+
+  if (error.status === 401 || error.status === 403) {
+    return 'Databáze odmítla přístup. Zkontroluj Supabase klíč a oprávnění.';
+  }
+
+  if (error.status === 429) {
+    return 'Příliš mnoho požadavků. Zkus to později.';
+  }
+
+  if (error.status >= 500) {
+    return 'Supabase má momentálně problém. Zkus to za chvíli.';
+  }
+
+  return 'Recenzi se nepodařilo uložit. Podrobnosti najdeš v konzoli.';
+}
+
+function updateStats() {
+  const total = reviews.length;
+  const avg = total
+    ? (reviews.reduce((sum, r) => sum + r.stars, 0) / total).toFixed(1)
+    : '0.0';
+
+  document.getElementById('avgRatingStat').textContent = `${avg} / 5 ★`;
+  document.getElementById('totalReviewsStat').textContent = `Z celkem ${total} hodnocení`;
+}
+
+function renderReviews() {
+  const list = document.getElementById('reviewsList');
+
+  const filtered = reviews.filter(r => {
+    const matchStars = activeStarFilter === 'all' ||
+      (activeStarFilter === '3'
+        ? r.stars <= 3
+        : r.stars === Number(activeStarFilter));
+
+    const matchSearch = !searchQuery ||
+      r.nick.toLowerCase().includes(searchQuery) ||
+      r.comment.toLowerCase().includes(searchQuery) ||
+      r.item.toLowerCase().includes(searchQuery);
+
+    return matchStars && matchSearch;
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="card" style="text-align:center;color:var(--text-muted);">Zatím žádné recenze pro tento filtr.</div>`;
+    updateStats();
+    return;
+  }
+
+  list.innerHTML = filtered.map(r => `
+    <div class="review-card${r.id === lastAddedId ? ' just-added' : ''}" data-review-id="${escapeHtml(r.id)}">
+      <div class="review-header">
+        <div class="review-author">
+          <img class="review-avatar"
+            src="https://mc-heads.net/avatar/${encodeURIComponent(r.nick)}/64"
+            onerror="this.src='https://mc-heads.net/avatar/Steve/64'"
+            alt="${escapeHtml(r.nick)}" />
+          <div>
+            <div class="review-name">${escapeHtml(r.nick)}</div>
+            <div class="review-meta">${escapeHtml(r.date)}</div>
+          </div>
+        </div>
+        <div class="review-stars">${'★'.repeat(r.stars)}${'☆'.repeat(5 - r.stars)}</div>
+      </div>
+      <p class="review-text">${escapeHtml(r.comment)}</p>
+      <div class="review-footer">
+        <span class="ordered-badge">Hodnocený nápoj: ${escapeHtml(r.item)}</span>
+        ${isAdmin ? `<button type="button" class="delete-review-btn" data-delete-review="${escapeHtml(r.id)}">Smazat recenzi</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  lastAddedId = null;
+  updateStats();
+  if (isAdmin) renderAdminReviews();
+}
+
+function renderAdminReviews() {
+  if (!isAdmin) return;
+  const container = document.getElementById('adminReviewsList');
+  if (!reviews.length) { container.textContent = 'Zatím nejsou žádné recenze.'; return; }
+  container.innerHTML = reviews.map(r => `
+    <div class="admin-review-row">
+      <div class="admin-review-info"><strong>${escapeHtml(r.nick)} · ${r.stars}/5 ★</strong>
+        <small>${escapeHtml(r.item)} · ${escapeHtml(r.date)}</small><div>${escapeHtml(r.comment)}</div></div>
+      <button type="button" class="admin-delete" data-delete-review="${escapeHtml(r.id)}">Smazat</button>
+    </div>`).join('');
+}
+
+async function deleteReview(reviewId) {
+  if (!isAdmin || !currentSession) return;
+  if (!confirm('Opravdu chceš tuto recenzi trvale smazat?')) return;
+  try {
+    const { error } = await supabase.from('reviews').delete().eq('id', reviewId);
+    if (error) throw error;
+    reviews = reviews.filter(r => r.id !== reviewId);
+    renderReviews();
+    renderAdminReviews();
+    showToast('Recenze byla smazána.');
+  } catch (error) {
+    console.error('Mazání recenze:', error);
+    showToast('Recenzi se nepodařilo smazat. Zkontroluj admin oprávnění.');
+  }
+}
+
+document.addEventListener('click', e => {
+  const button = e.target.closest('[data-delete-review]');
+  if (button) deleteReview(button.dataset.deleteReview);
+});
+
+const starBtns = document.querySelectorAll('#starPicker .star-btn');
+
+starBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectedStars = Number(btn.dataset.val);
+    starBtns.forEach(b => {
+      b.classList.toggle('active', Number(b.dataset.val) <= selectedStars);
+    });
+  });
+});
+
+let avatarTimeout;
+
+document.getElementById('playerNick').addEventListener('input', e => {
+  clearTimeout(avatarTimeout);
+  const val = e.target.value.trim() || 'Steve';
+
+  avatarTimeout = setTimeout(() => {
+    document.getElementById('nickAvatarPreview').src =
+      `https://mc-heads.net/avatar/${encodeURIComponent(val)}/64`;
+  }, 300);
+});
+
+document.getElementById('reviewForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!currentSession) { showToast('Pro přidání recenze se nejdřív přihlas.'); return; }
+
+  const form = e.currentTarget;
+  const submitButton = form.querySelector('button[type="submit"]');
+
+  const nick = document.getElementById('playerNick').value.trim();
+  const item = document.getElementById('orderedItem').value;
+  const comment = document.getElementById('reviewComment').value.trim();
+
+  if (!/^[A-Za-z0-9_]{3,16}$/.test(nick)) {
+    showToast('Nick musí mít 3–16 znaků: písmena, čísla nebo _.');
+    document.getElementById('playerNick').focus();
+    return;
+  }
+
+  if (comment.length < 5) {
+    showToast('Hodnocení musí mít alespoň 5 znaků.');
+    document.getElementById('reviewComment').focus();
+    return;
+  }
+
+  if (comment.length > 280) {
+    showToast('Hodnocení může mít maximálně 280 znaků.');
+    document.getElementById('reviewComment').focus();
+    return;
+  }
+
+  if (!ALLOWED_ITEMS.includes(item)) {
+    showToast('Vyber platnou položku z nabídky.');
+    return;
+  }
+
+  if (!Number.isInteger(selectedStars) || selectedStars < 1 || selectedStars > 5) {
+    showToast('Vyber hodnocení od 1 do 5 hvězdiček.');
+    return;
+  }
+
+  submitButton.disabled = true;
+  submitButton.textContent = 'Odesílám…';
+
+  try {
+    const response = await fetch(REVIEWS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${currentSession?.access_token || SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation'
+      },
+      body: JSON.stringify({
+        nickname: nick,
+        rating: selectedStars,
+        item,
+        comment
+      })
+    });
+
+    if (!response.ok) {
+      const error = await readSupabaseError(response);
+      console.error('Supabase odmítl recenzi:', error);
+      throw new Error(translateReviewError(error));
+    }
+
+    const inserted = await response.json();
+    const row = Array.isArray(inserted) ? inserted[0] : inserted;
+
+    if (!row || !row.id) {
+      console.error('Neočekávaná odpověď Supabase:', inserted);
+      throw new Error('Databáze recenzi přijala, ale nevrátila její ID. Obnov stránku a ověř, zda se uložila.');
+    }
+
+    reviews.unshift({
+      id: row.id,
+      nick: row.nickname,
+      stars: Number(row.rating),
+      item: row.item,
+      comment: row.comment,
+      date: formatReviewDate(row.created_at)
+    });
+
+    lastAddedId = row.id;
+    renderReviews();
+
+    form.reset();
+    selectedStars = 5;
+    starBtns.forEach(b => b.classList.add('active'));
+
+    document.getElementById('nickAvatarPreview').src =
+      'https://mc-heads.net/avatar/Steve/64';
+
+    showToast('Recenze byla uložena do databáze.');
+  } catch (error) {
+    console.error('Chyba při ukládání recenze:', error);
+    showToast(error.message || 'Chyba při ukládání recenze.');
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = 'Odeslat hodnocení';
+  }
+});
+
+document.getElementById('reviewFilters').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn) return;
+
+  document.querySelectorAll('#reviewFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeStarFilter = btn.dataset.stars;
+  renderReviews();
+});
+
+document.getElementById('searchToggleBtn').addEventListener('click', () => {
+  const wrap = document.getElementById('searchBarWrap');
+  wrap.classList.toggle('open');
+
+  if (wrap.classList.contains('open')) {
+    document.getElementById('globalSearchInput').focus();
+  }
+});
+
+document.getElementById('globalSearchInput').addEventListener('input', e => {
+  searchQuery = e.target.value.trim().toLowerCase();
+  renderMenu();
+  renderReviews();
+});
+
+document.getElementById('menuToggleBtn').addEventListener('click', () => {
+  document.getElementById('mobileDrawer').classList.toggle('open');
+});
+
+function copyText(text, message) {
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).catch(() => {
+      showToast('Kopírování se nepodařilo. Zkopíruj text ručně.');
+    });
+  } else {
+    showToast('Kopírování není v tomto prohlížeči dostupné.');
+    return;
+  }
+
+  showToast(message);
+}
+
+let toastTimer;
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+renderMenu();
+updateStats();
+initAuth();
+
+  </script>
+</body>
+</html>
